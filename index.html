@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lịch Sinh Hoạt, Họp Tại Phường</title>
+<meta name="description" content="(Dành cho Bí thư chi bộ khu dân cư)">
+<meta name="theme-color" content="#a8edea">
+<meta name="apple-mobile-web-app-title" content="Lịch Sinh hoạt">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.json">
+<script src="pwa-core.js"></script>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📅</text></svg>">
+<style>
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:#eef2f7;color:#1f2937;font-size:14px;
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  header{text-align:center;padding:14px 12px 10px}
+  header h1{ margin:0; font-size:22px; letter-spacing:.6px; text-transform:uppercase; color:#15803d; text-shadow:0 1px 2px rgba(21,128,61,.25); }
+  header .sub{color:#6b7280;font-size:12px;margin-top:4px}
+
+  .layout{
+    display:grid;grid-template-columns:minmax(0,1.65fr) minmax(0,1fr);
+    gap:12px;padding:0 12px 8px;max-width:1440px;margin:0 auto;align-items:start;
+  }
+  @media (max-width:920px){.layout{grid-template-columns:1fr}}
+
+  .panel{background:#fff;border:1px solid #e3e8ef;border-radius:10px;overflow:hidden}
+  .panel-title{
+  margin:0;
+  padding:9px 8px;
+  text-align:center;
+  font-size:15px;
+  font-weight:700;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  color:#2563eb;
+  background:#f0fdf4;
+  border-bottom:1px solid #cbd5e1;
+  text-shadow:0 1px 1px rgba(21,128,61,.18);
+}
+
+  .sub-title{
+    margin:0;padding:6px;text-align:center;font-size:11.5px;font-weight:700;
+    letter-spacing:.6px;text-transform:uppercase;color:#64748b;background:#f8fafc;
+    border-top:1px solid #e3e8ef;border-bottom:1px solid #e3e8ef;
+  }
+
+  /* ---------- Toolbar ---------- */
+  .toolbar{
+    display:flex;gap:6px;justify-content:center;align-items:center;
+    padding:8px;border-bottom:1px solid #eef2f7;flex-wrap:wrap;
+  }
+  .toolbar .range{font-size:12px;color:#64748b;font-weight:600;min-width:140px;text-align:center}
+
+  button,input,select,textarea{font:inherit}
+  .btn{
+    border:1px solid #cbd5e1;background:#fff;border-radius:6px;
+    padding:5px 10px;cursor:pointer;color:#334155;transition:.15s;
+  }
+  .btn:hover{background:#f1f5f9}
+  .btn.primary{background:#2563eb;border-color:#2563eb;color:#fff}
+  .btn.primary:hover{background:#1d4ed8}
+  .btn.danger{color:#b91c1c;border-color:#fecaca;background:#fff}
+  .btn.danger:hover{background:#fef2f2}
+
+  /* ---------- Bảng lịch ---------- */
+  .table-wrap{overflow-x:auto}
+  table.grid{width:100%;border-collapse:collapse;table-layout:fixed;min-width:520px}
+  table.grid th,table.grid td{
+  border-bottom:1px solid #cbd5e1;
+  border-right:1px solid #cbd5e1;
+  padding:5px 7px;
+  vertical-align:top;
+}
+  /* Đường phân cách giữa các ngày */
+table.grid tr:nth-child(3n) td{
+  border-bottom:2px solid #94a3b8;
+}
+  table.grid th:last-child,table.grid td:last-child{border-right:none}
+  table.grid thead th{
+  text-align:center;
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.4px;
+  color:#334155;
+  background:#e2e8f0;
+  padding:7px 5px;
+  font-weight:700;
+  border-right:2px solid #94a3b8;
+  border-bottom:2px solid #94a3b8;
+}
+
+table.grid thead th:last-child{
+  border-right:none;
+}
+  td.daycell{text-align:center;background:#fbfdff;vertical-align:middle}
+  td.daycell .thu{font-size:12.5px;font-weight:700;color:#1e293b;white-space:nowrap}
+  td.daycell .dt{font-size:11.5px;color:#64748b;margin-top:2px}
+  td.slot{
+    text-align:center;font-size:12px;color:#475569;font-weight:600;
+    background:#fcfdff;vertical-align:middle;white-space:nowrap;
+  }
+  td.content{font-size:13px;white-space:pre-wrap;word-break:break-word;min-height:22px}
+  td.note{font-size:12.5px;white-space:pre-wrap;word-break:break-word}
+    tr.today td{background:#eff6ff}
+  tr.today td.daycell{background:#dbeafe}
+  tr.today td.slot{background:#e0edff}
+  tr.weekend td.daycell .thu{color:#b91c1c}
+
+/* ---------- Đường phân cách giữa các ngày ---------- */
+table.grid tr:nth-child(3n) td{
+  border-bottom:2px solid #94a3b8;
+}
+
+table.grid td.daycell{
+  border-bottom:2px solid #94a3b8 !important;
+}
+
+/* ---------- Màu chữ theo ngày ---------- */
+  tr.wd-normal td.content,
+  tr.wd-normal td.note{color:#15803d}
+  tr.wd-sun td.content,
+  tr.wd-sun td.note{color:#dc2626}
+
+  /* ---------- Nút mở form tạo ---------- */
+  .create-toggle{
+    padding:10px;text-align:center;border-bottom:1px solid #eef2f7;
+  }
+  .create-toggle .btn{width:100%;font-weight:600}
+
+  /* ---------- Form ---------- */
+  .form{padding:10px;display:grid;gap:9px;border-bottom:1px solid #eef2f7}
+  .field{display:grid;gap:3px}
+  .field label{
+    font-size:11px;color:#64748b;font-weight:700;
+    text-transform:uppercase;letter-spacing:.4px;
+  }
+  input[type=date],input[type=text],select,textarea{
+    width:100%;padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;
+    background:#fff;color:#1f2937;outline:none;
+  }
+  input:focus,select:focus,textarea:focus{border-color:#2563eb;box-shadow:0 0 0 2px #dbeafe}
+  textarea{resize:vertical;min-height:66px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .actions{display:flex;gap:6px;flex-wrap:wrap}
+  .actions .btn{flex:1;min-width:70px}
+
+  /* ---------- Danh sách đã tạo ---------- */
+  .list{padding:8px 10px 12px;display:grid;gap:6px;max-height:44vh;overflow:auto}
+  .list-item{
+    border:1px solid #e3e8ef;border-radius:8px;padding:7px 8px;
+    display:grid;grid-template-columns:1fr auto;gap:6px;align-items:start;background:#fff;
+  }
+  .li-head{font-size:11.5px;font-weight:700;color:#2563eb;text-transform:uppercase;letter-spacing:.3px}
+  .li-body{font-size:13px;white-space:pre-wrap;word-break:break-word;margin-top:2px}
+  .li-note{font-size:12px;color:#64748b;margin-top:2px}
+  .li-body .muted{color:#9ca3af}
+  .list .empty{text-align:center;color:#9ca3af;font-size:12.5px;padding:10px}
+
+  .list-item.li-normal .li-body{color:#15803d}
+  .list-item.li-sun .li-body{color:#dc2626}
+
+   .list-item.li-normal .li-head{
+  color:#15803d;
+}
+
+.list-item.li-sun .li-head{
+  color:#dc2626;
+}
+
+tr.weekend:not(.wd-sun) td.daycell .thu{
+  color:#2563eb;
+}
+
+  .status{text-align:center;font-size:12px;padding:6px 12px 16px;color:#64748b;min-height:24px}
+  .status.err{color:#b91c1c}
+
+  .list-toggle{
+    width:100%;display:flex;justify-content:center;align-items:center;gap:8px;
+    padding:10px;border:0;border-top:1px solid #e3e8ef;background:#f8fafc;cursor:pointer;
+    font-size:12.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#475569;
+  }
+  .list-toggle:hover{background:#eef2f7}
+  .list-btns{display:flex;flex-direction:column;gap:5px}
+
+  /* ---------- Hộp xác nhận xoá ---------- */
+  .modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.55);display:flex;
+    align-items:center;justify-content:center;padding:16px;z-index:50}
+  .modal{background:#fff;border-radius:12px;max-width:380px;width:100%;
+    padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+  .modal h4{margin:0 0 8px;font-size:16px;color:#b91c1c}
+  .modal .m-info{background:#f8fafc;border:1px solid #e3e8ef;border-radius:8px;
+    padding:8px 10px;font-size:13px;margin:8px 0;white-space:pre-wrap;word-break:break-word}
+  .modal .m-info b{display:block;color:#2563eb;font-size:12px;margin-bottom:2px;text-transform:uppercase}
+  .modal .m-warn{font-size:12.5px;color:#b91c1c;font-weight:600}
+  .modal .actions{margin-top:12px}
+  .btn.danger-solid{background:#dc2626;border-color:#dc2626;color:#fff}
+  .btn.danger-solid:hover{background:#b91c1c}
+
+  /* ---------- Đính kèm ---------- */
+  .att-box{display:grid;gap:8px;border:1px dashed #cbd5e1;border-radius:8px;padding:8px;background:#fafcff}
+  .att-group{display:grid;gap:4px}
+  .att-head{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#334155}
+  .att-head .btn{padding:3px 9px;font-size:12px}
+  .att-file{display:flex;align-items:center;gap:6px;font-size:12px;color:#475569;background:#fff;border:1px solid #e3e8ef;border-radius:6px;padding:3px 6px}
+  .att-file .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .att-file .nm a{color:#2563eb;text-decoration:none}
+  .att-file .tag{font-size:10.5px;color:#15803d;font-weight:700}
+  .att-file button{border:0;background:none;color:#b91c1c;cursor:pointer;font-size:15px;line-height:1;padding:0 2px}
+  .att-hint{font-size:11px;color:#94a3b8}
+  .chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
+  .chip{display:inline-block;padding:1px 9px;border-radius:999px;font-size:11.5px;font-weight:600;text-decoration:none;
+    border:1px solid #bfdbfe;background:#eff6ff;color:#2563eb;white-space:nowrap}
+  .chip.tl{border-color:#bbf7d0;background:#f0fdf4;color:#15803d}
+  .btn:disabled{opacity:.6;cursor:wait}
+  .form-err{background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;border-radius:6px;padding:7px 9px;font-size:12.5px;font-weight:600}
+  .ok-banner{max-width:1440px;margin:0 12px 10px;padding:9px 12px;border-radius:10px;background:#f0fdf4;
+    border:1px solid #bbf7d0;color:#15803d;font-size:13px;display:flex;gap:8px;align-items:flex-start;justify-content:space-between}
+  @media (min-width:1464px){.ok-banner{margin:0 auto 10px}}
+  .ok-banner button{border:0;background:none;color:#15803d;font-size:16px;cursor:pointer;line-height:1}
+
+  /* ---------- Hộp mật khẩu ---------- */
+  .modal h4.pw-title{color:#2563eb}
+  .pw-wrap{position:relative;margin-top:10px}
+  .pw-wrap input{width:100%;padding:8px 40px 8px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:15px}
+  .pw-eye{position:absolute;right:4px;top:50%;transform:translateY(-50%);border:0;background:none;
+    cursor:pointer;font-size:12px;font-weight:700;color:#2563eb;padding:6px}
+  .pw-err{min-height:18px;margin-top:6px;font-size:12.5px;color:#b91c1c;font-weight:600}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  .shake{animation:shake .25s}
+  .btn.edit{background:#2563eb;border-color:#2563eb;color:#fff}
+  .btn.edit:hover{background:#1d4ed8}
+  [hidden]{display:none !important}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Lịch sinh hoạt, họp <br> Tại phường Thanh Khê</h1>
+  <div class="sub">(Dành cho Bí thư chi bộ khu dân cư)</div>
+</header>
+
+<div class="ok-banner" id="okBanner" hidden></div>
+
+<main class="layout">
+
+  <!-- ================= TRÁI: LỊCH ================= -->
+  <section class="panel">
+    <h2 class="panel-title">Lịch chi tiết</h2>
+
+    <div class="toolbar">
+      <button class="btn" id="btnPrev" type="button">‹ Trước</button>
+      <button class="btn" id="btnToday" type="button">Hôm nay</button>
+      <button class="btn" id="btnNext" type="button">Sau ›</button>
+      <span class="range" id="rangeLabel"></span>
+    </div>
+
+    <div class="table-wrap" id="schedule"></div>
+  </section>
+
+  <!-- ================= PHẢI: TẠO ================= -->
+  <section class="panel">
+    <h2 class="panel-title">Tạo lịch</h2>
+
+    <div class="create-toggle" id="createToggle">
+      <button class="btn primary" id="btnToggleCreate" type="button">＋ Tạo mới</button>
+    </div>
+
+    <form class="form" id="entryForm" autocomplete="off" hidden>
+      <div class="row2">
+        <div class="field">
+          <label for="fDate">Ngày</label>
+          <input type="date" id="fDate" required>
+        </div>
+        <div class="field">
+          <label for="fSlot">Buổi</label>
+          <select id="fSlot">
+            <option value="sang">Sáng</option>
+            <option value="chieu">Chiều</option>
+            <option value="toi">Tối</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="fContent">Nội dung</label>
+        <textarea id="fContent" rows="3" placeholder="Nhập nội dung công tác..."></textarea>
+      </div>
+
+      <div class="field">
+        <label for="fNote">Ghi chú</label>
+        <input type="text" id="fNote" placeholder="Ghi chú (nếu có)">
+      </div>
+
+      <div class="field">
+        <label>Đính kèm (tuỳ chọn)</label>
+        <div class="att-box" id="attBox">
+          <div class="att-group" data-kind="sodo">
+            <div class="att-head"><span>Sơ đồ</span><button type="button" class="btn" data-pick="sodo">＋ Chọn tệp</button></div>
+            <input type="file" class="att-input" accept="image/*,.pdf,.doc,.docx" multiple hidden>
+            <div class="att-list"></div>
+          </div>
+          <div class="att-group" data-kind="tailieu">
+            <div class="att-head"><span>Tài liệu</span><button type="button" class="btn" data-pick="tailieu">＋ Chọn tệp</button></div>
+            <input type="file" class="att-input" accept="image/*,.pdf,.doc,.docx,.txt" multiple hidden>
+            <div class="att-list"></div>
+          </div>
+          <div class="att-hint">Ảnh, PDF, Word · tối đa 8 MB/tệp · lưu vào Drive: LichCongTacTuan/TaiLieu/</div>
+        </div>
+      </div>
+
+      <div class="form-err" id="formErr" hidden></div>
+
+      <div class="actions">
+        <button class="btn primary" type="submit" id="btnSave">Lưu</button>
+        <button class="btn" type="button" id="btnClose">Đóng</button>
+        <button class="btn danger" type="button" id="btnDelete" hidden>Xoá</button>
+      </div>
+    </form>
+
+    <button type="button" class="list-toggle" id="btnToggleList" aria-expanded="false">
+      <span>Đã tạo <span id="listCount"></span></span><span id="listArrow">▾</span>
+    </button>
+    <div class="list" id="list" hidden></div>
+  </section>
+
+</main>
+
+<div class="status" id="status"></div>
+
+<script>
+/* ============================================================
+   CẤU HÌNH
+   - API_URL: dán URL Google Apps Script Web App vào đây.
+     Nếu để trống, dữ liệu chỉ lưu tạm trên trình duyệt.
+   - KEEP_DAYS: số ngày giữ dữ liệu (mặc định 7 = 1 tuần)
+   ============================================================ */
+const CONFIG = {
+  API_URL: "https://script.google.com/macros/s/AKfycby4mGfcuaiDB6aP_-Z3S9TwmGaBCzCcpGT6GNVpK6V7ER_czeE2vlZuksN-3gcwYlic/exec",          // ví dụ: "https://script.google.com/macros/s/AKfy.../exec"
+  KEEP_DAYS: 7,
+  DAYS_SHOWN: 7,
+  PASSWORD: "thanhkhe"   // mật khẩu cho Tạo mới / Sửa / Xoá
+};
+
+const SLOTS = [['sang', 'Sáng'], ['chieu', 'Chiều'], ['toi', 'Tối']];
+const WD = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+
+/* ---------------- Tiện ích ngày tháng ---------------- */
+function pad(n){ return String(n).padStart(2, '0'); }
+function toISO(d){ return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+function todayISO(){ return toISO(new Date()); }
+function fromISO(s){ const p = String(s).split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); }
+function addDays(iso, n){ const d = fromISO(iso); d.setDate(d.getDate() + n); return toISO(d); }
+function fmtShort(iso){ const d = fromISO(iso); return pad(d.getDate()) + '/' + pad(d.getMonth() + 1); }
+function fmtFull(iso){ const d = fromISO(iso); return pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear(); }
+function weekdayName(iso){ return WD[fromISO(iso).getDay()]; }
+function isSunday(iso){ return fromISO(iso).getDay() === 0; }
+function slotLabel(k){ const s = SLOTS.find(x => x[0] === k); return s ? s[1] : ''; }
+function slotOrder(k){ return SLOTS.findIndex(s => s[0] === k); }
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ---------------- State ---------------- */
+let startDate = todayISO();
+let items = [];
+let currentId = null;
+let lastError = '';
+
+/* ---------------- Lưu trữ tạm trên máy ---------------- */
+const LS_KEY = 'lichcongtac_v1';
+function lsLoad(){ try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; } catch(e){ return []; } }
+function lsSave(data){ try { localStorage.setItem(LS_KEY, JSON.stringify(data)); } catch(e){} }
+
+/* ---------------- Gọi Google Apps Script ---------------- */
+async function api(action, payload){
+  const res = await fetch(CONFIG.API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // tránh preflight CORS
+    body: JSON.stringify(Object.assign({ action: action }, payload || {}))
+  });
+  const text = await res.text();
+  let json;
+  try { json = JSON.parse(text); }
+  catch (e) { throw new Error('Máy chủ không trả về JSON — kiểm tra Web App đã Deploy với quyền "Anyone" chưa'); }
+  if (!json.ok) throw new Error(json.error || 'Lỗi không xác định');
+  return json.data;
+}
+
+function setStatus(msg, isErr){
+  const el = document.getElementById('status');
+  el.textContent = msg || '';
+  el.className = 'status' + (isErr ? ' err' : '');
+}
+
+/* ---------------- Nạp dữ liệu ---------------- */
+async function loadData(){
+  const limit = addDays(todayISO(), -CONFIG.KEEP_DAYS);
+
+  // 1) Hiện ngay dữ liệu cache
+  items = lsLoad().map(normalize).filter(Boolean).filter(it => it.date >= limit);
+  renderAll();
+
+  if (!CONFIG.API_URL) {
+    setStatus('Chưa cấu hình Google Sheet — dữ liệu chỉ lưu trên trình duyệt này.');
+    return;
+  }
+
+  // 2) Tải mới ở nền, chỉ gọi list
+  setStatus('Đang cập nhật...');
+  try {
+    const data = await api('list') || [];
+    items = data.map(normalize).filter(Boolean).filter(it => it.date >= limit);
+    lsSave(items);
+    renderAll();
+    setStatus('Đã kết nối Google Sheet.');
+  } catch (e) {
+    setStatus('Không kết nối được Google Sheet (' + e.message + '). Đang dùng dữ liệu tạm.', true);
+  }
+
+  // 3) Dọn dữ liệu cũ sau, không chặn giao diện, tối đa 1 lần/ngày
+  try {
+    const key = 'lichcongtac_cleanup_day';
+    if (localStorage.getItem(key) !== todayISO()) {
+      api('cleanup', { days: CONFIG.KEEP_DAYS })
+        .then(() => { try { localStorage.setItem(key, todayISO()); } catch(e){} })
+        .catch(() => {});
+    }
+  } catch (e) {}
+}
+
+function normalize(r){
+  if (!r || !r.date || !r.slot) return null;
+  const date = String(r.date).slice(0, 10);
+  const slot = String(r.slot);
+  return {
+    id: date + '__' + slot,
+    date: date,
+    slot: slot,
+    content: String(r.content || ''),
+    note: String(r.note || ''),
+    updated: r.updated || '',
+    files: (Array.isArray(r.files) ? r.files : [])
+      .filter(function(f){ return f && /^https:\/\//.test(String(f.url || '')); })
+      .map(function(f){ return { kind: f.kind === 'sodo' ? 'sodo' : 'tailieu', name: String(f.name || ''), url: String(f.url), id: String(f.id || '') }; })
+  };
+}
+
+/* ---------------- Lưu / Xoá ---------------- */
+async function saveItem(rec, uploads){
+  let out = rec;
+  if (CONFIG.API_URL) {
+    const saved = await api('save', { item: rec, uploads: uploads || [] });
+    out = normalize(saved) || rec;
+  } else if (uploads && uploads.length) {
+    throw new Error('Chưa cấu hình Google Sheet nên không tải tệp lên Drive được');
+  }
+  const idx = items.findIndex(i => i.id === out.id);
+  if (idx >= 0) items[idx] = out; else items.push(out);
+  lsSave(items);
+  return out;
+}
+
+async function deleteItem(id){
+  items = items.filter(i => i.id !== id);
+  lsSave(items);
+
+  if (CONFIG.API_URL) {
+    try { await api('delete', { id: id }); }
+    catch (e) { setStatus('Lỗi xoá trên Google Sheet: ' + e.message, true); return false; }
+  }
+  return true;
+}
+
+/* ---------------- Hộp nhập mật khẩu ---------------- */
+function askPassword(what){
+  return new Promise(function(resolve){
+    const bg = document.createElement('div');
+    bg.className = 'modal-bg';
+    bg.innerHTML = '<div class="modal" role="dialog">' +
+      '<h4 class="pw-title">🔒 Nhập mật khẩu</h4>' +
+      '<div>Cần mật khẩu để ' + esc(what) + '.</div>' +
+      '<div class="pw-wrap">' +
+        '<input type="password" id="pwInput" autocomplete="off" placeholder="Mật khẩu">' +
+        '<button type="button" class="pw-eye" id="pwEye">Hiện</button>' +
+      '</div>' +
+      '<div class="pw-err" id="pwErr"></div>' +
+      '<div class="actions">' +
+        '<button type="button" class="btn" data-r="0">Huỷ</button>' +
+        '<button type="button" class="btn primary" data-r="1">Xác nhận</button>' +
+      '</div></div>';
+    document.body.appendChild(bg);
+    const inp = bg.querySelector('#pwInput');
+    const err = bg.querySelector('#pwErr');
+    inp.focus();
+    function done(v){ bg.remove(); resolve(v); }
+    function check(){
+      if (inp.value === CONFIG.PASSWORD) return done(true);
+      err.textContent = 'Sai mật khẩu, vui lòng nhập lại.';
+      inp.value = ''; inp.focus();
+      inp.classList.remove('shake'); void inp.offsetWidth; inp.classList.add('shake');
+    }
+    bg.querySelector('#pwEye').addEventListener('click', function(){
+      const show = inp.type === 'password';
+      inp.type = show ? 'text' : 'password';
+      this.textContent = show ? 'Ẩn' : 'Hiện';
+      inp.focus();
+    });
+    inp.addEventListener('keydown', function(e){
+      if (e.key === 'Enter') { e.preventDefault(); check(); }
+      else if (e.key === 'Escape') done(false);
+    });
+    bg.addEventListener('click', function(e){
+      if (e.target === bg) return done(false);
+      const b = e.target.closest('[data-r]');
+      if (!b) return;
+      if (b.dataset.r === '1') check(); else done(false);
+    });
+  });
+}
+
+/* ---------------- Hộp xác nhận xoá ---------------- */
+function confirmDelete(id){
+  return new Promise(function(resolve){
+    const it = items.find(i => i.id === id);
+    const bg = document.createElement('div');
+    bg.className = 'modal-bg';
+    const info = it
+      ? '<div class="m-info"><b>' + weekdayName(it.date) + ' ' + fmtFull(it.date) + ' · ' + slotLabel(it.slot) + '</b>' +
+        (esc(it.content) || '(trống)') + (it.note ? '\nGhi chú: ' + esc(it.note) : '') + '</div>'
+      : '';
+    bg.innerHTML = '<div class="modal" role="alertdialog">' +
+      '<h4>⚠ Xác nhận xoá</h4>' +
+      '<div>Bạn sắp xoá nội dung công tác sau:</div>' + info +
+      '<div class="m-warn">Xoá xong sẽ không khôi phục được.</div>' +
+      '<div class="actions">' +
+        '<button type="button" class="btn" data-r="0">Không xoá</button>' +
+        '<button type="button" class="btn danger-solid" data-r="1">Xoá</button>' +
+      '</div></div>';
+    document.body.appendChild(bg);
+    bg.querySelector('[data-r="0"]').focus();
+    function done(v){ bg.remove(); resolve(v); }
+    bg.addEventListener('click', function(e){
+      if (e.target === bg) return done(false);
+      const b = e.target.closest('[data-r]');
+      if (b) done(b.dataset.r === '1');
+    });
+  });
+}
+
+/* ---------------- Đính kèm: Sơ đồ / Tài liệu ---------------- */
+const KINDS = [['sodo', 'Sơ đồ'], ['tailieu', 'Tài liệu']];
+const MAX_FILE = 8 * 1024 * 1024;
+const ALLOWED_RE = /\.(jpe?g|png|gif|webp|heic|heif|pdf|docx?|txt)$/i;
+let keptFiles = [];
+let pending = { sodo: [], tailieu: [] };
+let busy = false;
+
+function chipsHtml(files){
+  if (!files || !files.length) return '';
+  let h = '<div class="chips">';
+  KINDS.forEach(function(k){
+    const list = files.filter(f => f.kind === k[0]);
+    list.forEach(function(f, i){
+      h += '<a class="chip' + (k[0] === 'tailieu' ? ' tl' : '') + '" href="' + esc(f.url) +
+           '" target="_blank" rel="noopener" title="' + esc(f.name) + '">' +
+           k[1] + (list.length > 1 ? ' ' + (i + 1) : '') + '</a>';
+    });
+  });
+  return h + '</div>';
+}
+
+function renderAttach(){
+  KINDS.forEach(function(k){
+    const box = document.querySelector('.att-group[data-kind="' + k[0] + '"] .att-list');
+    if (!box) return;
+    let h = '';
+    keptFiles.forEach(function(f, i){
+      if (f.kind !== k[0]) return;
+      h += '<div class="att-file"><span class="nm"><a href="' + esc(f.url) + '" target="_blank" rel="noopener">' + esc(f.name) +
+           '</a></span><span class="tag">đã lưu</span><button type="button" data-rm-kept="' + i + '" title="Gỡ">✕</button></div>';
+    });
+    pending[k[0]].forEach(function(f, i){
+      h += '<div class="att-file"><span class="nm">' + esc(f.name) +
+           '</span><button type="button" data-rm-new="' + k[0] + ':' + i + '" title="Bỏ">✕</button></div>';
+    });
+    box.innerHTML = h;
+  });
+}
+
+function readB64(blob){
+  return new Promise(function(res, rej){
+    const r = new FileReader();
+    r.onload = function(){ res(String(r.result).split(',')[1] || ''); };
+    r.onerror = function(){ rej(new Error('Không đọc được tệp')); };
+    r.readAsDataURL(blob);
+  });
+}
+
+async function compressImage(file){
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise(function(res, rej){
+      const i = new Image(); i.onload = function(){ res(i); }; i.onerror = rej; i.src = url;
+    });
+    const s = Math.min(1, 1800 / Math.max(img.naturalWidth, img.naturalHeight));
+    const w = Math.round(img.naturalWidth * s), h = Math.round(img.naturalHeight * s);
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h); ctx.drawImage(img, 0, 0, w, h);
+    return await new Promise(function(res){ c.toBlob(res, 'image/jpeg', 0.85); });
+  } finally { URL.revokeObjectURL(url); }
+}
+
+async function prepFile(file){
+  let blob = file, name = file.name, mime = file.type || '';
+  if (/^image\//.test(mime) && mime !== 'image/gif') {
+    try {
+      const c = await compressImage(file);
+      if (c && c.size < file.size) { blob = c; name = name.replace(/\.[^.]+$/, '') + '.jpg'; mime = 'image/jpeg'; }
+    } catch (e) {}
+  }
+  if (blob.size > MAX_FILE) throw new Error('Tệp "' + file.name + '" quá lớn (tối đa 8 MB)');
+  return { name: name, mime: mime, data: await readB64(blob) };
+}
+
+function showFormErr(msg){
+  const el = document.getElementById('formErr');
+  el.textContent = msg || '';
+  el.hidden = !msg;
+}
+
+function showOk(rec){
+  const el = document.getElementById('okBanner');
+  el.innerHTML = '<div><b>✓ Tạo thành công</b> · ' + weekdayName(rec.date) + ' ' + fmtFull(rec.date) + ' · ' + slotLabel(rec.slot) +
+                 chipsHtml(rec.files) + '</div><button type="button" id="okClose" aria-label="Đóng">✕</button>';
+  el.hidden = false;
+}
+
+/* ---------------- Hiển thị lịch ---------------- */
+function renderSchedule(){
+  const today = todayISO();
+  const map = {};
+  items.forEach(it => { map[it.id] = it; });
+
+  const days = [];
+  for (let i = 0; i < CONFIG.DAYS_SHOWN; i++) days.push(addDays(startDate, i));
+
+  document.getElementById('rangeLabel').textContent =
+    fmtShort(days[0]) + ' – ' + fmtFull(days[days.length - 1]);
+
+  let html = '<table class="grid"><colgroup>' +
+             '<col style="width:86px"><col style="width:56px"><col><col style="width:30%">' +
+             '</colgroup><thead><tr>' +
+             '<th>Thứ / Ngày</th><th>Buổi</th><th>Nội dung</th><th>Ghi chú</th>' +
+             '</tr></thead><tbody>';
+
+  days.forEach(function(d){
+    const wd = fromISO(d).getDay();
+    const weekend = (wd === 0 || wd === 6);
+    const isToday = (d === today);
+    const colorCls = isSunday(d) ? 'wd-sun' : 'wd-normal';
+
+    SLOTS.forEach(function(s, si){
+      const key = s[0], label = s[1];
+      const it = map[d + '__' + key];
+      const cls = [isToday ? 'today' : '', weekend ? 'weekend' : '', colorCls]
+                    .filter(Boolean).join(' ');
+
+      html += '<tr class="' + cls + '" data-date="' + d + '" data-slot="' + key + '">';
+      if (si === 0) {
+        html += '<td class="daycell" rowspan="3">' +
+                  '<div class="thu">' + weekdayName(d) + '</div>' +
+                  '<div class="dt">' + fmtShort(d) + '</div>' +
+                '</td>';
+      }
+      html += '<td class="slot">' + label + '</td>' +
+              '<td class="content">' + esc(it ? it.content : '') + '</td>' +
+              '<td class="note">' + esc(it ? it.note : '') + (it ? chipsHtml(it.files) : '') + '</td>' +
+              '</tr>';
+    });
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('schedule').innerHTML = html;
+}
+
+/* ---------------- Danh sách đã tạo ---------------- */
+function renderList(){
+  const el = document.getElementById('list');
+  document.getElementById('listCount').textContent = items.length ? '(' + items.length + ')' : '';
+  const sorted = items.slice().sort(function(a, b){
+    if (a.date !== b.date) return a.date.localeCompare(b.date);
+    return slotOrder(a.slot) - slotOrder(b.slot);
+  });
+
+  if (!sorted.length) {
+    el.innerHTML = '<div class="empty">Chưa có dữ liệu</div>';
+    return;
+  }
+
+  el.innerHTML = sorted.map(function(it){
+    const body = esc(it.content) || '<span class="muted">(trống)</span>';
+    const colorCls = isSunday(it.date) ? 'li-sun' : 'li-normal';
+    return '<div class="list-item ' + colorCls + '" data-id="' + it.id + '">' +
+      '<div>' +
+        '<div class="li-head">' + weekdayName(it.date) + ' ' + fmtShort(it.date) +
+          ' · ' + slotLabel(it.slot) + '</div>' +
+        '<div class="li-body">' + body + '</div>' +
+        (it.note ? '<div class="li-note">Ghi chú: ' + esc(it.note) + '</div>' : '') +
+        chipsHtml(it.files) +
+      '</div>' +
+      '<div class="list-btns">' +
+        '<button class="btn edit" type="button" data-edit="' + it.id + '">Sửa</button>' +
+        '<button class="btn danger" type="button" data-del="' + it.id + '" title="Xoá">✕ Xoá</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderAll(){
+  renderSchedule();
+  renderList();
+}
+
+/* ---------------- Form ---------------- */
+function setCreateOpen(open){
+  document.getElementById('entryForm').hidden = !open;
+  document.getElementById('createToggle').hidden = open;
+}
+
+function resetForm(){
+  document.getElementById('entryForm').reset();
+  document.getElementById('fDate').value = todayISO();
+  document.getElementById('fSlot').value = 'sang';
+  document.getElementById('btnDelete').hidden = true;
+  currentId = null;
+  keptFiles = []; pending = { sodo: [], tailieu: [] };
+  renderAttach(); showFormErr('');
+}
+
+function fillForm(date, slot, it){
+  document.getElementById('fDate').value = date;
+  document.getElementById('fSlot').value = slot;
+  document.getElementById('fContent').value = it ? it.content : '';
+  document.getElementById('fNote').value = it ? it.note : '';
+  document.getElementById('btnDelete').hidden = !it;
+  currentId = it ? it.id : null;
+  keptFiles = it ? (it.files || []).map(f => Object.assign({}, f)) : [];
+  pending = { sodo: [], tailieu: [] };
+  renderAttach(); showFormErr('');
+}
+
+async function onSubmit(e){
+  e.preventDefault();
+  if (busy) return;
+
+  const date = document.getElementById('fDate').value;
+  const slot = document.getElementById('fSlot').value;
+  const content = document.getElementById('fContent').value.trim();
+  const note = document.getElementById('fNote').value.trim();
+  if (!date) return;
+
+  const id = date + '__' + slot;
+  const newCount = pending.sodo.length + pending.tailieu.length;
+
+  if (!content && !note && !keptFiles.length && !newCount) {
+    if (items.some(i => i.id === id)) {
+      if (!(await confirmDelete(id))) return;
+      await deleteItem(id);
+      renderAll();
+      setStatus('Đã xoá: ' + weekdayName(date) + ' ' + fmtFull(date) + ' · ' + slotLabel(slot));
+    } else {
+      showFormErr('Chưa có nội dung để lưu.');
+      return;
+    }
+    resetForm();
+    return;
+  }
+
+  const btn = document.getElementById('btnSave');
+  busy = true; btn.disabled = true;
+  btn.textContent = newCount ? 'Đang tải lên...' : 'Đang lưu...';
+  showFormErr(''); setStatus('');
+
+  try {
+    const uploads = [];
+    for (const k of KINDS) {
+      for (const f of pending[k[0]]) {
+        const p = await prepFile(f); p.kind = k[0]; uploads.push(p);
+      }
+    }
+    const rec = { id: id, date: date, slot: slot, content: content, note: note,
+                  files: keptFiles.slice(), updated: new Date().toISOString() };
+    const saved = await saveItem(rec, uploads);
+
+    // Thành công: về trang chủ
+    if (date < startDate || date > addDays(startDate, CONFIG.DAYS_SHOWN - 1)) startDate = date;
+    renderAll();
+    setCreateOpen(false);
+    resetForm();
+    showOk(saved);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } catch (err) {
+    console.error('save error', err);
+    showFormErr('Tạo không thành công: ' + ((err && err.message) ? err.message : err) + '. Vui lòng bấm Lưu để tạo lại.');
+  } finally {
+    busy = false; btn.disabled = false; btn.textContent = 'Lưu';
+  }
+}
+
+/* ---------------- Sự kiện ---------------- */
+function bindEvents(){
+  document.getElementById('entryForm').addEventListener('submit', onSubmit);
+
+  document.getElementById('okBanner').addEventListener('click', function(e){
+    if (e.target.closest('#okClose')) this.hidden = true;
+  });
+
+  document.getElementById('attBox').addEventListener('click', function(e){
+    const pick = e.target.closest('[data-pick]');
+    if (pick) { document.querySelector('.att-group[data-kind="' + pick.dataset.pick + '"] .att-input').click(); return; }
+    const rk = e.target.closest('[data-rm-kept]');
+    if (rk) { keptFiles.splice(+rk.dataset.rmKept, 1); renderAttach(); return; }
+    const rn = e.target.closest('[data-rm-new]');
+    if (rn) { const p = rn.dataset.rmNew.split(':'); pending[p[0]].splice(+p[1], 1); renderAttach(); }
+  });
+  document.querySelectorAll('.att-input').forEach(function(inp){
+    inp.addEventListener('change', function(){
+      const kind = inp.closest('.att-group').dataset.kind;
+      const bad = [];
+      Array.from(inp.files).forEach(function(f){
+        const isImg = /^image\//.test(f.type);
+        if (!isImg && !ALLOWED_RE.test(f.name)) { bad.push(f.name + ' (định dạng không hỗ trợ)'); return; }
+        if (!isImg && f.size > MAX_FILE) { bad.push(f.name + ' (quá 8 MB)'); return; }
+        pending[kind].push(f);
+      });
+      inp.value = '';
+      renderAttach();
+      showFormErr(bad.length ? 'Bỏ qua: ' + bad.join('; ') : '');
+    });
+  });
+
+  document.getElementById('btnToggleCreate').addEventListener('click', async function(){
+    if (!(await askPassword('tạo mới'))) return;
+    resetForm();
+    setCreateOpen(true);
+    setStatus('');
+    document.getElementById('okBanner').hidden = true;
+    document.getElementById('fContent').focus();
+  });
+
+  document.getElementById('btnClose').addEventListener('click', function(){
+    setCreateOpen(false);
+    resetForm();
+    setStatus('');
+  });
+
+  document.getElementById('btnDelete').addEventListener('click', async function(){
+    if (!currentId) return;
+    const it = items.find(i => i.id === currentId);
+    if (!it) return;
+    if (!(await confirmDelete(currentId))) return;
+    await deleteItem(currentId);
+    renderAll();
+    resetForm();
+    setStatus('Đã xoá.');
+  });
+
+  document.getElementById('btnPrev').addEventListener('click', function(){
+    startDate = addDays(startDate, -CONFIG.DAYS_SHOWN); renderSchedule();
+  });
+  document.getElementById('btnNext').addEventListener('click', function(){
+    startDate = addDays(startDate, CONFIG.DAYS_SHOWN); renderSchedule();
+  });
+  document.getElementById('btnToday').addEventListener('click', function(){
+    startDate = todayISO(); renderSchedule();
+  });
+
+  document.getElementById('btnToggleList').addEventListener('click', function(){
+    const list = document.getElementById('list');
+    list.hidden = !list.hidden;
+    this.setAttribute('aria-expanded', String(!list.hidden));
+    document.getElementById('listArrow').textContent = list.hidden ? '▾' : '▴';
+  });
+
+  document.getElementById('list').addEventListener('click', async function(e){
+    const ed = e.target.closest('[data-edit]');
+    if (ed) {
+      const it = items.find(i => i.id === ed.getAttribute('data-edit'));
+      if (!it) return;
+      if (!(await askPassword('sửa'))) return;
+      fillForm(it.date, it.slot, it);
+      setCreateOpen(true);
+      document.getElementById('entryForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.getElementById('fContent').focus();
+      setStatus('Đang sửa: ' + weekdayName(it.date) + ' ' + fmtFull(it.date) + ' · ' + slotLabel(it.slot));
+      return;
+    }
+    const btn = e.target.closest('[data-del]');
+    if (!btn) return;
+    const id = btn.getAttribute('data-del');
+    if (!(await askPassword('xoá'))) return;
+    if (!(await confirmDelete(id))) return;
+    await deleteItem(id);
+    renderAll();
+    if (currentId === id) resetForm();
+    setStatus('Đã xoá.');
+  });
+}
+
+/* ---------------- Khởi động ---------------- */
+document.addEventListener('DOMContentLoaded', function(){
+  resetForm();
+  setCreateOpen(false);
+  bindEvents();
+  loadData();
+});
+</script>
+
+</body>
+</html>
