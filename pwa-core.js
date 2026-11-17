@@ -2,7 +2,7 @@ const PWA_CONFIG = {
   APP_NAME:    'Lịch Sinh hoạt',
   APP_DESC:    'Lịch sinh hoạt, họp tại phường',
   APP_ICON:    'icon-1000.png',
-  APP_VERSION: 'v1.0.0',
+  APP_VERSION: 'v1.1.1',
   THEME_COLOR: '#5b8dee',
   ACCENT_COLOR:'#7ec8e3',
   BADGE_LABEL: 'Lưu Hành Nội Bộ',
